@@ -1,0 +1,79 @@
+amcl:
+    ros__parameters:
+        use_sim_time: false
+        min_particles: 500
+        max_particles: 2000
+        laser_model_type: likelihood_field
+        odom_model_type: diff
+        base_frame_id: base_link # ✅ 如果你的 TF 不同，改这里
+        scan_topic: scan
+
+planner_server:
+    ros__parameters:
+        expected_planner_frequency: 5.0
+        planner_plugins: ['GridBased']
+        GridBased:
+            plugin: 'nav2_navfn_planner/NavfnPlanner'
+            tolerance: 0.2
+            use_astar: true
+
+controller_server:
+    ros__parameters:
+        controller_plugins: ['FollowPath']
+
+        FollowPath:
+            plugin: 'nav2_dwb_controller/DWBLocalPlanner'
+            max_vel_x: 0.3
+            max_vel_theta: 1.0
+            acc_lim_x: 1.5
+            acc_lim_theta: 2.0
+            vx_samples: 20
+            vtheta_samples: 20
+            sim_time: 2.0
+            xy_goal_tolerance: 0.05
+            yaw_goal_tolerance: 0.1
+
+local_costmap:
+    local_costmap:
+        ros__parameters:
+            global_frame: odom
+            robot_base_frame: base_link
+            update_frequency: 10.0
+            publish_frequency: 10.0
+            rolling_window: true
+            width: 3.0
+            height: 3.0
+            resolution: 0.05
+            robot_radius: 0.09 # ⚠️ 如不准，后续调
+            plugins: ['obstacle_layer', 'inflation_layer']
+
+            obstacle_layer:
+                plugin: 'nav2_costmap_2d/ObstacleLayer'
+                observation_sources: scan
+                scan:
+                    topic: /scan
+                    max_obstacle_height: 2.0
+                    clearing: true
+                    marking: true
+
+            inflation_layer:
+                plugin: 'nav2_costmap_2d/InflationLayer'
+                inflation_radius: 0.15 # ✅ Phase 2 不压胶带关键
+                cost_scaling_factor: 3.0
+
+global_costmap:
+    global_costmap:
+        ros__parameters:
+            global_frame: map
+            robot_base_frame: base_link
+            resolution: 0.05
+            robot_radius: 0.09
+            plugins: ['static_layer', 'inflation_layer']
+
+            static_layer:
+                plugin: 'nav2_costmap_2d/StaticLayer'
+
+            inflation_layer:
+                plugin: 'nav2_costmap_2d/InflationLayer'
+                inflation_radius: 0.15
+                cost_scaling_factor: 3.0
